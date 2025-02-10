@@ -86,126 +86,162 @@ std::map<int, double> WangLandauPotts(PottsLattice lat, int MC_N, int q, double 
     // create info file in output folder with parameters
     info_dump(folder, MC_N, L, q, f_tol, h_tol, NoLog, sampleInterval, f_factor);
 
-    srand(time(NULL));
+    // Initialize random number generator
+    std::mt19937 rng(std::time(nullptr));
+    std::uniform_int_distribution<int> spin_dist(1, q);
+    std::uniform_int_distribution<int> coord_dist(0, L - 1);
+    std::uniform_real_distribution<double> prob_dist(0.0, 1.0);
+
     std::pair<float, float> E_limit = lat.Energy_Limit();
     float E_min = E_limit.first;
     float E_max = E_limit.second;
-    float num_bins = -E_min + 1;
 
     std::map<int, double> lng;
-    std::map<int, double> g;
     std::map<int, int> hist; // Histogram H(E)
 
     for (int E = E_min; E <= E_max; E += 1)
     {
-        if (NoLog)
-        {
-            g[E] = 1.0;
-        }
-        else
-        {
-            lng[E] = 0.0;
-        }
+        lng[E] = 0.0;
         hist[E] = 0;
     }
 
-    double f = std::exp(1.0);
-    double lnf = std::log(f);
+    double lnf = 1.0;
 
-    if (NoLog)
+    while (lnf > f_tol)
     {
-        while (f - 1 > f_tol)
+        #pragma omp parallel for
+        for (int i = 0; i < MC_N; i++)
         {
-#pragma omp parallel for
-            for (int i = 0; i < MC_N; i++)
+            int x = coord_dist(rng);
+            int y = coord_dist(rng);
+            int s0 = lat.lattice[x][y];
+
+            float Old_E = lat.Potts_Energy();
+
+            int s1 = spin_dist(rng);
+            lat.lattice[x][y] = s1;
+
+            float New_E = lat.Potts_Energy();
+
+            if (prob_dist(rng) < std::exp(lng[Old_E] - lng[New_E]))
             {
-                int x = rand() % L;
-                int y = rand() % L;
-                int s0 = lat.lattice[x][y];
+                #pragma omp atomic
+                lng[New_E] += lnf;
+                #pragma omp atomic
+                hist[New_E] += 1;
+            }
+            else
+            {
+                lat.lattice[x][y] = s0;
+                #pragma omp atomic
+                lng[Old_E] += lnf;
+                #pragma omp atomic
+                hist[Old_E] += 1;
+            }
 
-                float Old_E = lat.Potts_Energy();
-
-                int s1 = 1 + rand() % q;
-                lat.lattice[x][y] = s1;
-
-                float New_E = lat.Potts_Energy();
-
-                if (rand() / (double)RAND_MAX < std::min(1.0, g[Old_E] / g[New_E]))
+            if (i % sampleInterval == 0 && isFlat(hist, h_tol))
+            {
+                #pragma omp single
                 {
-                    lng[New_E] += lnf;
-                    hist[New_E] += 1;
-                }
-                else
-                {
-                    lat.lattice[x][y] = s0;
-                    g[Old_E] *= f;
-                    hist[Old_E] += 1;
-                }
-
-                if (i % sampleInterval == 0)
-                {
-                    std::cout << "f: " << f << std::endl;
-                    if (isFlat(hist, h_tol))
+                    lnf /= f_factor;
+                    for (int E = E_min; E <= E_max; E += 1)
                     {
-                        f = pow(f, 1.0 / f_factor);
-                        hist.clear();
-                        for (int E = E_min; E <= E_max; E += 1)
-                        {
-                            hist[E] = 0;
-                        }
+                        hist[E] = 0;
                     }
                 }
             }
         }
-        return g;
     }
-    else
+    filename = folder + "/" + filename;
+    save_data(lng, filename);
+    return lng;
+};
+
+std::map<int, double> WangLandauIsing(IsingLattice lat, int MC_N, double f_tol, double h_tol, int sampleInterval, int f_factor, std::string filename)
+{
+    int L = lat.lattice.size();
+
+    info_print(MC_N, L, 0, f_tol, h_tol, false, sampleInterval, f_factor);
+
+    // create output folder if it doesn't exist with name equal to filename without extension and in result folder
+    std::string folder = "results/" + filename.substr(0, filename.find_last_of("."));
+    std::string command = "mkdir -p " + folder;
+    system(command.c_str());
+
+    // create info file in output folder with parameters
+    info_dump(folder, MC_N, L, 0, f_tol, h_tol, false, sampleInterval, f_factor);
+
+    // Initialize random number generator
+    std::mt19937 rng(std::time(nullptr));
+    std::uniform_int_distribution<int> spin_dist(0, 1);
+    std::uniform_int_distribution<int> coord_dist(0, L - 1);
+    std::uniform_real_distribution<double> prob_dist(0.0, 1.0);
+
+    std::pair<float, float> E_limit = lat.Energy_Limit();
+    float E_min = E_limit.first;
+    float E_max = E_limit.second;
+
+    std::map<int, double> lng;
+    std::map<int, int> hist; // Histogram H(E)
+
+    for (int E = E_min; E <= E_max; E += 1)
     {
-        while (lnf > f_tol)
+        lng[E] = 0.0;
+        hist[E] = 0;
+    }
+
+    double lnf = 1.0;
+
+    while (lnf > f_tol)
+    {
+        #pragma omp parallel for
+        for (int i = 0; i < MC_N; i++)
         {
-#pragma omp parallel for
-            for (int i = 0; i < MC_N; i++)
+            int x = coord_dist(rng);
+            int y = coord_dist(rng);
+            int s0 = lat.lattice[x][y];
+
+            float Old_E = lat.Ising_Energy();
+
+            int spin = (spin_dist(rng) == 0) ? -1 : 1;
+            int s1 = spin;
+            lat.lattice[x][y] = s1;
+
+            float New_E = lat.Ising_Energy();
+
+            if (prob_dist(rng) < std::exp(lng[Old_E] - lng[New_E]))
             {
-                int x = rand() % L;
-                int y = rand() % L;
-                int s0 = lat.lattice[x][y];
+                #pragma omp atomic
+                lng[New_E] += lnf;
+                #pragma omp atomic
+                hist[New_E] += 1;
+            }
+            else
+            {
+                lat.lattice[x][y] = s0;
+                #pragma omp atomic
+                lng[Old_E] += lnf;
+                #pragma omp atomic
+                hist[Old_E] += 1;
+            }
 
-                float Old_E = lat.Potts_Energy();
-
-                int s1 = 1 + rand() % q;
-                lat.lattice[x][y] = s1;
-
-                float New_E = lat.Potts_Energy();
-
-                if (rand() / (double)RAND_MAX < std::exp(lng[Old_E] - lng[New_E])) // std::min(0.0, std::exp(lng[Old_E] - lng[New_E]))
+            if (i % sampleInterval == 0 && isFlat(hist, h_tol))
+            {
+                #pragma omp single
                 {
-                    lng[New_E] += lnf;
-                    hist[New_E] += 1;
-                }
-                else
-                {
-                    lat.lattice[x][y] = s0;
-                    lng[Old_E] += lnf;
-                    hist[Old_E] += 1;
-                }
-
-                if (i % sampleInterval == 0)
-                {
-                    // std::cout << "lnf: " << lnf << std::endl;
-                    if (isFlat(hist, h_tol))
+                    lnf /= f_factor;
+                    hist.clear();
+                    for (int E = E_min; E <= E_max; E += 1)
                     {
-                        lnf = lnf / f_factor;
-                        hist.clear();
-                        for (int E = E_min; E <= E_max; E += 1)
-                        {
-                            hist[E] = 0;
-                        }
+                        hist[E] = 0;
                     }
                 }
             }
         }
-        filename = folder + "/" + filename;
-        save_data(lng, filename);
-        return lng;
     }
-}
+    filename = folder + "/" + filename;
+    save_data(lng, filename);
+    return lng;
+};
+
+
