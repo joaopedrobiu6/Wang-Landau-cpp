@@ -1,12 +1,13 @@
 #include "utils.h"
 
-void save_data(std::map<int, double> &data, std::string filename)
+
+void save_data(std::vector<double> &data, std::string filename, float E_min)
 {
     std::ofstream file;
     file.open(filename);
-    for (const auto &entry : data)
+    for (int i = 0; i < data.size(); ++i)
     {
-        file << entry.first << "\t" << entry.second << std::endl;
+        file << E_min + i << "\t" << data[i] << std::endl;
     }
     file.close();
 };

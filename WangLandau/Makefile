@@ -8,7 +8,7 @@ SRCDIR := src
 RESUL := results
 
 CXX := g++
-CXXFLAGS := -O3 -std=c++23 -I $(SRCDIR)
+CXXFLAGS := -O3 -std=c++23 -I $(SRCDIR) -Xpreprocessor -fopenmp -I/opt/homebrew/opt/libomp/include
 
 #######################################################################
 #### Files
@@ -31,7 +31,7 @@ $(LIBDIR)/libCompPhys.a: $(OBJS) | $(LIBDIR)
 	rm -f $^
 
 $(BINDIR)/%.exe: $(MAINDIR)/%.cpp $(LIBDIR)/libCompPhys.a | $(BINDIR)
-	$(CXX) $(CXXFLAGS) -o $@ $< -L$(LIBDIR) -l CompPhys
+	$(CXX) $(CXXFLAGS) -o $@ $< -L$(LIBDIR) -l CompPhys -L/opt/homebrew/opt/libomp/lib -lomp
 
 $(LIBDIR)/%.o: $(SRCDIR)/%.cpp | $(LIBDIR)
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
