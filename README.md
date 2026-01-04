@@ -1,6 +1,6 @@
-# Project 25: Wang-Landau simulations and Lee-Kosterlitz method to study discontinuous phase transitions
+# Wang-Landau simulations and Lee-Kosterlitz method to study discontinuous phase transitions
 
-This project and all the code were implemented by João Pedro Ferreira Biu, for the final project of the course SI2530 Computational Physics at KTH.
+This project and all the code were implemented by João Pedro Ferreira Biu.
 
 The code of the project is structured in the following way:
 - The folder `WangLandau/` contains the code needed to run the Wang-Landau simulations and also a Jupyter Notebook with the implementation of Lee-Kosterlitz method to study phase transitions.
