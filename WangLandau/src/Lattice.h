@@ -6,6 +6,7 @@
 #include "map"
 #include "fstream"
 #include "random"
+#include <utility>
 
 // only the header file is included here, the implementation is in the lattice.cpp file
 std::vector<std::vector<int>> lattice(int L, int q);

@@ -8,7 +8,17 @@ SRCDIR := src
 RESUL := results
 
 CXX := g++
-CXXFLAGS := -O3 -std=c++23 -I $(SRCDIR) -Xpreprocessor -fopenmp -I/opt/homebrew/opt/libomp/include
+
+# Detect libomp path
+OMP_PREFIX := $(shell brew --prefix libomp 2>/dev/null)
+ifeq ($(OMP_PREFIX),)
+  $(error libomp not found. Please install it with 'brew install libomp')
+endif
+
+OMP_INCLUDE := -I$(OMP_PREFIX)/include
+OMP_LIB := -L$(OMP_PREFIX)/lib -lomp
+
+CXXFLAGS := -O3 -std=c++23 -I $(SRCDIR) -Xpreprocessor -fopenmp $(OMP_INCLUDE)
 
 #######################################################################
 #### Files
@@ -31,7 +41,7 @@ $(LIBDIR)/libCompPhys.a: $(OBJS) | $(LIBDIR)
 	rm -f $^
 
 $(BINDIR)/%.exe: $(MAINDIR)/%.cpp $(LIBDIR)/libCompPhys.a | $(BINDIR)
-	$(CXX) $(CXXFLAGS) -o $@ $< -L$(LIBDIR) -l CompPhys -L/opt/homebrew/opt/libomp/lib -lomp
+	$(CXX) $(CXXFLAGS) -o $@ $< -L$(LIBDIR) -l CompPhys $(OMP_LIB)
 
 $(LIBDIR)/%.o: $(SRCDIR)/%.cpp | $(LIBDIR)
 	$(CXX) $(CXXFLAGS) -c -o $@ $<

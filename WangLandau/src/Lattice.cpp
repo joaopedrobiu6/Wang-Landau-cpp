@@ -30,7 +30,7 @@ double PottsLattice::Potts_Energy()
         for (int j = 0; j < L; ++j)
         {
             int s0 = lattice[i][j];
-            for (auto [dx, dy] : {std::pair{-1, 0}, std::pair{1, 0}, std::pair{0, -1}, std::pair{0, 1}})
+            for (auto [dx, dy] : {std::pair<int, int>{-1, 0}, std::pair<int, int>{1, 0}, std::pair<int, int>{0, -1}, std::pair<int, int>{0, 1}})
             {
                 int x = (i + dx + L) % L;
                 int y = (j + dy + L) % L;

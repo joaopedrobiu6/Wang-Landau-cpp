@@ -13,8 +13,8 @@
 bool isFlat(const std::map<int, int> &hist, double h_tol);
 
 std::map<int, double> WangLandauPotts(PottsLattice lat, int MC_N, int q, double f_tol,
-                                      double h_tol, bool NoLog = false, int sampleInterval = 1000, 
-                                      int f_factor = 2,  std::string filename = "lng.txt");
+                                      double h_tol, bool NoLog = false, int sampleInterval = 1000,
+                                      int f_factor = 2, std::string filename = "lng.txt", std::string save_path = "results");
 
 void info_dump(std::string folder, int MC_N, int L, int q, double f_tol, double h_tol, bool NoLog, int sampleInterval, int f_factor);
 void info_print(int MC_N, int L, int q, double f_tol, double h_tol, bool NoLog, int sampleInterval, int f_factor);
